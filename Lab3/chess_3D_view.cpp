@@ -48,6 +48,30 @@ using namespace glm;
 // Sets up the chess board
 void setupChessBoard(tModelMap& cTModelMap);
 
+// ????????
+void moveChessPiece(const ChessPosition& from, const ChessPosition& to) {
+    // ?????3D????
+    float squareSize = 1.0f; // ????????
+    float boardOffset = -3.5f * squareSize; // ???????
+    
+    glm::vec3 fromPos = glm::vec3(
+        boardOffset + from.x * squareSize,
+        0.0f, // ????
+        boardOffset + from.y * squareSize
+    );
+    
+    glm::vec3 toPos = glm::vec3(
+        boardOffset + to.x * squareSize,
+        0.0f,
+        boardOffset + to.y * squareSize
+    );
+    
+    // ???????????????
+    // ??????????????????
+    // ???
+    // chessPieces[from.y][from.x].position = toPos;
+}
+
 int main( void )
 {
     

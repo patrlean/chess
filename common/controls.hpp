@@ -11,6 +11,11 @@ for ECE6122 Labs. It does NOT touch the existing functions.
 
 #include <iostream>
 
+struct ChessPosition {
+    int x; // 0-7 对应 a-h
+    int y; // 0-7 对应 1-8
+};
+
 void computeMatricesFromInputs();
 glm::mat4 getViewMatrix();
 glm::mat4 getProjectionMatrix();

@@ -72,6 +72,36 @@ float speedLab3 = 10.0f; // 3 units / second
 // Debounce limit
 const int DEB_LIMIT = 40;
 
+// 棋盘坐标转换结构体
+
+// 将UCI格式坐标(如"e2")转换为内部坐标系统
+ChessPosition uciToPosition(const std::string& uciPos) {
+    ChessPosition pos;
+    if (uciPos.length() != 2) return {-1, -1};
+    
+    pos.x = tolower(uciPos[0]) - 'a';
+    pos.y = uciPos[1] - '1';
+    
+    // 验证坐标是否有效
+    if (pos.x < 0 || pos.x > 7 || pos.y < 0 || pos.y > 7) {
+        return {-1, -1};
+    }
+    
+    return pos;
+}
+
+// 验证移动是否合法
+bool isValidMove(const std::string& move) {
+    if (move.length() != 4) return false;
+    
+    ChessPosition from = uciToPosition(move.substr(0, 2));
+    ChessPosition to = uciToPosition(move.substr(2, 2));
+    
+    // 检查坐标是否有效
+    if (from.x == -1 || to.x == -1) return false;
+    
+    return true;
+}
 
 void computeMatricesFromInputs(){
 
@@ -164,7 +194,7 @@ std::vector<std::string> splitString(const std::string& input) {
     return tokens;
 }
 
-// 新增输入处理线程函数
+// input thread function
 void inputThreadFunction() {
     while (isRunning) {
         std::string input;
@@ -197,17 +227,25 @@ void processCommand() {
 
     if (command == "move") {
         if (tokens.size() != 2) {
-            std::cout << "Invalid command or move!!" << std::endl;
+            std::cout << "Invalid move format! Use format like 'move e2e4'" << std::endl;
             return;
         }
+        
         std::string move = tokens[1];
-        // 这里添加处理移动的逻辑
-        if (move.length() != 4) {
-            std::cout << "Invalid command or move!!" << std::endl;
+        if (!isValidMove(move)) {
+            std::cout << "Invalid move coordinates!" << std::endl;
             return;
         }
-        // 处理移动命令
-        // TODO: 添加具体的移动逻辑
+
+        ChessPosition from = uciToPosition(move.substr(0, 2));
+        ChessPosition to = uciToPosition(move.substr(2, 2));
+
+        // 更新棋子位置
+        // 这里需要调用您的棋子移动函数
+        // 例如：moveChessPiece(from, to);
+        
+        std::cout << "Moving piece from " << move.substr(0, 2) 
+                  << " to " << move.substr(2, 2) << std::endl;
     }
     else if (command == "camera") {
         if (tokens.size() != 4) {
