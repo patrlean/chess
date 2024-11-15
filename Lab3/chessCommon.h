@@ -28,6 +28,8 @@ typedef struct
 // model matrix generation
 typedef struct
 {
+    std::string nameIdentifier;
+    int color; // 0 = white, 1 = black
     unsigned int rCnt;
     unsigned int rDis;
     float rAngle;
@@ -46,6 +48,6 @@ const float CPSCALE = 0.015f;
 // Platform height
 const float PHEIGHT = -3.0f;
 // Hash to hold the target Model matrix spec for each Chess component
-typedef std::unordered_map <std::string, tPosition> tModelMap;
+typedef std::unordered_map <std::string, std::vector<tPosition>> tModelMap;
 
 #endif

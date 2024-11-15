@@ -9,13 +9,13 @@ Description :
                     - Lab3/Stone_Chess_Board/12951_Stone_Chess_Board_v1_L3.obj
 
     keyboard inputs definitions
-        1) �w� key moves the camera radially closer to the origin.
-        2) �s� key moves the camera radially farther from the origin.
-        3) �a� key rotates the camera to the left maintaining the radial distance from the origin.
-        4) �d� key rotates to camera to the right maintaining the radial distance from the origin.
+        1) w key moves the camera radially closer to the origin.
+        2) s key moves the camera radially farther from the origin.
+        3) a key rotates the camera to the left maintaining the radial distance from the origin.
+        4) d key rotates to camera to the right maintaining the radial distance from the origin.
         5) The up arrow key radially rotates the camera up.
         6) The down arrow radially rotates the camera down.
-        7) The �L� key toggles the specular and diffuse components of the light on and off but leaves the ambient component unchanged.
+        7) The L key toggles the specular and diffuse components of the light on and off but leaves the ambient component unchanged.
         8) Pressing the escape key closes the window and exits the program
 */
 
@@ -167,8 +167,7 @@ int main( void )
     // Setup the Chess board locations
     tModelMap cTModelMap;
     setupChessBoard(cTModelMap);
-    std::cout << "cTModelMap setup successes" << std::endl;
-
+     
     // Load it into a VBO (One time activity)
     // Run through all the components for rendering
     for (auto cit = gchessComponents.begin(); cit != gchessComponents.end(); cit++)
@@ -191,24 +190,11 @@ int main( void )
     double lastTime = glfwGetTime();
     int nbFrames = 0;
 
-    // ??????
+    // Start input thread
     startInputThread();
 
     do{
-        // ?????????????
         processCommand();
-
-        // Measure speed
-        // double currentTime = glfwGetTime();
-        // nbFrames++;
-
-        // If last prinf() was more than 1sec ago
-        // if (currentTime - lastTime >= 1.0) { // If last prinf() was more than 1sec ago
-        //     // printf and reset
-        //     printf("%f ms/frame\n", 1000.0 / double(nbFrames));
-        //     nbFrames = 0;
-        //     lastTime += 1.0;
-        // }
 
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -227,14 +213,14 @@ int main( void )
         for (auto cit = gchessComponents.begin(); cit != gchessComponents.end(); cit++)
         {            
             // Seach for mesh rendering targets and counts
-            tPosition cTPosition = cTModelMap[cit->getComponentID()];
+            std::vector<tPosition> cTPositions = cTModelMap[cit->getComponentID()];
             
             // Repeat for pair of players using repetition count
-            for (unsigned int pit = 0; pit < cTPosition.rCnt; pit++)
+            for (unsigned int pit = 0; pit < cTPositions.size(); pit++)
             {
                 // Modify the X for player repetition
-                tPosition cTPositionMorph = cTPosition;
-                cTPositionMorph.tPos.x += pit * cTPosition.rDis * CHESS_BOX_SIZE;
+                tPosition cTPositionMorph = cTPositions[pit];
+                // cTPositionMorph.tPos.x += pit * cTPositionMorph.rDis * CHESS_BOX_SIZE; // ?
                 // Pass it for Model matrix generation
                 glm::mat4 ModelMatrix = cit->genModelMatrix(cTPositionMorph);
                 // Genrate the MVP matrix
@@ -267,6 +253,11 @@ int main( void )
         glfwSwapBuffers(window);
         glfwPollEvents();
 
+        // break if isrunning is false
+        if (!isRunning) {
+            break;
+        }
+
     } // Check if the ESC key was pressed or the window was closed
     while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
            glfwWindowShouldClose(window) == 0 && isRunning);
@@ -286,37 +277,320 @@ int main( void )
 
 void setupChessBoard(tModelMap& cTModelMap)
 {
-    // Target spec Hash
-    cTModelMap =
-    {
-        // Chess board              Count  rDis Angle      Axis             Scale                          Position (X, Y, Z)
-        {"12951_Stone_Chess_Board", {1,    0,   0.f,    {1, 0, 0},    glm::vec3(CBSCALE), {0.f,     0.f,                             PHEIGHT}}},
-        // First player             Count  rDis Angle      Axis             Scale                          Position (X, Y, Z)
-        {"TORRE3",                  {2,   (8-1),90.f,   {1, 0, 0},    glm::vec3(CPSCALE), {-3.5*CHESS_BOX_SIZE, -3.5*CHESS_BOX_SIZE, PHEIGHT}}},
-        {"Object3",                 {2,   (6-1),90.f,   {1, 0, 0},    glm::vec3(CPSCALE), {-2.5*CHESS_BOX_SIZE, -3.5*CHESS_BOX_SIZE, PHEIGHT}}},
-        {"ALFIERE3",                {2,   (4-1),90.f,   {1, 0, 0},    glm::vec3(CPSCALE), {-1.5*CHESS_BOX_SIZE, -3.5*CHESS_BOX_SIZE, PHEIGHT}}},
-        {"REGINA2",                 {1,    0,   90.f,   {1, 0, 0},    glm::vec3(CPSCALE), {-0.5*CHESS_BOX_SIZE, -3.5*CHESS_BOX_SIZE, PHEIGHT}}},
-        {"RE2",                     {1,    0,   90.f,   {1, 0, 0},    glm::vec3(CPSCALE), { 0.5*CHESS_BOX_SIZE, -3.5*CHESS_BOX_SIZE, PHEIGHT}}},
-        {"PEDONE13",                {8,    1,   90.f,   {1, 0, 0},    glm::vec3(CPSCALE), {-3.5*CHESS_BOX_SIZE, -2.5*CHESS_BOX_SIZE, PHEIGHT}}}
-    };
+    // 使用 emplace 方法，并将 tPosition 放入 vector 中
+    
+    // 棋盘
+    cTModelMap.emplace("12951_Stone_Chess_Board", std::vector<tPosition>{
+        tPosition{
+            "chessBoard",           
+            0,                      
+            1, 0, 0.f,              
+            {1, 0, 0},              
+            glm::vec3(CBSCALE),     
+            {0.f, 0.f, PHEIGHT}     
+        }
+    });
 
-    // Second player derived from first player!!
-    // Second Player (TORRE02)
-    cTModelMap["TORRE02"] = cTModelMap["TORRE3"];
-    cTModelMap["TORRE02"].tPos.y = -cTModelMap["TORRE3"].tPos.y;
-    // Second Player (Object02)
-    cTModelMap["Object02"] = cTModelMap["Object3"];
-    cTModelMap["Object02"].tPos.y = -cTModelMap["Object3"].tPos.y;
-    // Second Player (ALFIERE02)
-    cTModelMap["ALFIERE02"] = cTModelMap["ALFIERE3"];
-    cTModelMap["ALFIERE02"].tPos.y = -cTModelMap["ALFIERE3"].tPos.y;
-    // Second Player (REGINA01)
-    cTModelMap["REGINA01"] = cTModelMap["REGINA2"];
-    cTModelMap["REGINA01"].tPos.y = -cTModelMap["REGINA2"].tPos.y;
-    // Second Player (RE01)
-    cTModelMap["RE01"] = cTModelMap["RE2"];
-    cTModelMap["RE01"].tPos.y = -cTModelMap["RE2"].tPos.y;
-    // Second Player (PEDONE12)
-    cTModelMap["PEDONE12"] = cTModelMap["PEDONE13"];
-    cTModelMap["PEDONE12"].tPos.y = -cTModelMap["PEDONE13"].tPos.y;
+    // 车 - 白车
+    cTModelMap.emplace("TORRE3", std::vector<tPosition>{
+        tPosition{
+            "white_rook1",
+            0,
+            1, 7, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {-3.5f * CHESS_BOX_SIZE, -3.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "white_rook2", 
+            0,
+            1, 7, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {3.5f * CHESS_BOX_SIZE, -3.5f * CHESS_BOX_SIZE, PHEIGHT}
+        }
+    });
+
+    // 马 - 两个白马的位置
+    cTModelMap.emplace("Object3", std::vector<tPosition>{
+        tPosition{
+            "white_knight1",
+            0,
+            1, 5, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {-2.5f * CHESS_BOX_SIZE, -3.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "white_knight2",
+            0,
+            1, 5, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {2.5f * CHESS_BOX_SIZE, -3.5f * CHESS_BOX_SIZE, PHEIGHT}
+        }
+    });
+
+    // 象 - 两个白象的位置
+    cTModelMap.emplace("ALFIERE3", std::vector<tPosition>{
+        tPosition{
+            "white_bishop1",
+            0,
+            1, 3, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {-1.5f * CHESS_BOX_SIZE, -3.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "white_bishop2",
+            0,
+            1, 3, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {1.5f * CHESS_BOX_SIZE, -3.5f * CHESS_BOX_SIZE, PHEIGHT}
+        }
+    });
+
+    // 后 - 一个白后
+    cTModelMap.emplace("REGINA2", std::vector<tPosition>{
+        tPosition{
+            "white_queen",
+            0,
+            1, 0, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {-0.5f * CHESS_BOX_SIZE, -3.5f * CHESS_BOX_SIZE, PHEIGHT}
+        }
+    });
+
+    // 王 - 一个白王
+    cTModelMap.emplace("RE2", std::vector<tPosition>{
+        tPosition{
+            "white_king",
+            0,
+            1, 0, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {0.5f * CHESS_BOX_SIZE, -3.5f * CHESS_BOX_SIZE, PHEIGHT}
+        }
+    });
+
+    // 兵 - 八个白兵的位置
+    cTModelMap.emplace("PEDONE13", std::vector<tPosition>{
+        tPosition{
+            "white_pawn1",
+            0,
+            1, 1, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {-3.5f * CHESS_BOX_SIZE, -2.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "white_pawn2",
+            0,
+            1, 1, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {-2.5f * CHESS_BOX_SIZE, -2.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "white_pawn3",
+            0,
+            1, 1, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {-1.5f * CHESS_BOX_SIZE, -2.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "white_pawn4",
+            0,
+            1, 1, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {-0.5f * CHESS_BOX_SIZE, -2.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "white_pawn5",
+            0,
+            1, 1, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {0.5f * CHESS_BOX_SIZE, -2.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "white_pawn6",
+            0,
+            1, 1, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {1.5f * CHESS_BOX_SIZE, -2.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "white_pawn7",
+            0,
+            1, 1, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {2.5f * CHESS_BOX_SIZE, -2.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "white_pawn8",
+            0,
+            1, 1, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {3.5f * CHESS_BOX_SIZE, -2.5f * CHESS_BOX_SIZE, PHEIGHT}
+        }
+    });
+    // add black chess pieces
+    cTModelMap.emplace("TORRE02", std::vector<tPosition>{
+        tPosition{
+            "black_rook1",
+            1,
+            1, 7, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {-3.5f * CHESS_BOX_SIZE, 3.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "black_rook2",
+            1,
+            1, 7, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {3.5f * CHESS_BOX_SIZE, 3.5f * CHESS_BOX_SIZE, PHEIGHT}
+        }
+    });
+    
+    // 马 - 两个白马的位置
+    cTModelMap.emplace("Object02", std::vector<tPosition>{
+        tPosition{
+            "black_knight1",
+            1,
+            1, 5, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {-2.5f * CHESS_BOX_SIZE, 3.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "black_knight2",
+            1,
+            1, 5, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {2.5f * CHESS_BOX_SIZE, 3.5f * CHESS_BOX_SIZE, PHEIGHT}
+        }
+    });
+
+    // 象 - 两个象的位置
+    cTModelMap.emplace("ALFIERE02", std::vector<tPosition>{
+        tPosition{
+            "black_bishop1",
+            1,
+            1, 3, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {-1.5f * CHESS_BOX_SIZE, 3.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "black_bishop2",
+            1,
+            1, 3, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {1.5f * CHESS_BOX_SIZE, 3.5f * CHESS_BOX_SIZE, PHEIGHT}
+        }
+    });
+
+    // 后 - 一个后
+    cTModelMap.emplace("REGINA01", std::vector<tPosition>{
+        tPosition{
+            "black_queen",
+            1,
+            1, 0, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {-0.5f * CHESS_BOX_SIZE, 3.5f * CHESS_BOX_SIZE, PHEIGHT}
+        }
+    });
+
+    // 王 - 一个白王
+    cTModelMap.emplace("RE01", std::vector<tPosition>{
+        tPosition{
+            "black_king",
+            1,
+            1, 0, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {0.5f * CHESS_BOX_SIZE, 3.5f * CHESS_BOX_SIZE, PHEIGHT}
+        }
+    });
+
+    // 兵 - 八个黑兵的位置
+    cTModelMap.emplace("PEDONE12", std::vector<tPosition>{
+        tPosition{
+            "black_pawn1",
+            1,
+            1, 1, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {-3.5f * CHESS_BOX_SIZE, 2.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "black_pawn2",
+            1,
+            1, 1, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {-2.5f * CHESS_BOX_SIZE, 2.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "black_pawn3",
+            1,
+            1, 1, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {-1.5f * CHESS_BOX_SIZE, 2.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "black_pawn4",
+            1,
+            1, 1, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {-0.5f * CHESS_BOX_SIZE, 2.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "black_pawn5",
+            1,
+            1, 1, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {0.5f * CHESS_BOX_SIZE, 2.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "black_pawn6",
+            1,
+            1, 1, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {1.5f * CHESS_BOX_SIZE, 2.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "black_pawn7",
+            1,
+            1, 1, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {2.5f * CHESS_BOX_SIZE, 2.5f * CHESS_BOX_SIZE, PHEIGHT}
+        },
+        tPosition{
+            "black_pawn8",
+            1,
+            1, 1, 90.f,
+            {1, 0, 0},
+            glm::vec3(CPSCALE),
+            {3.5f * CHESS_BOX_SIZE, 2.5f * CHESS_BOX_SIZE, PHEIGHT}
+        }
+    });
 }
