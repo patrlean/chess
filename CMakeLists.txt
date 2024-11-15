@@ -3,7 +3,7 @@ cmake_minimum_required (VERSION 3.0)
 project (Tutorials)
 
 find_package(OpenGL REQUIRED)
-
+find_package(Threads REQUIRED)
 
 if( CMAKE_BINARY_DIR STREQUAL CMAKE_SOURCE_DIR )
     message( FATAL_ERROR "Please select another Build Directory ! (and give it a clever name, like bin_Visual2012_64bits/)" )
@@ -14,7 +14,6 @@ endif()
 if( CMAKE_BINARY_DIR MATCHES " " )
 	message( "Your Build Directory contains spaces. If you experience problems when compiling, this can be the cause." )
 endif()
-
 
 
 # Compile external dependencies 
@@ -29,7 +28,6 @@ include(MSVCMultipleProcessCompile) # /MP
 if(INCLUDE_DISTRIB)
 	add_subdirectory(distrib)
 endif(INCLUDE_DISTRIB)
-
 
 include_directories(
 	external/AntTweakBar-1.16/include/
@@ -77,6 +75,7 @@ add_executable(Lab3
 target_link_libraries(Lab3
 	${ALL_LIBS}
 	assimp
+	Threads::Threads
 )
 set_target_properties(Lab3 PROPERTIES COMPILE_DEFINITIONS "USE_ASSIMP;USE_LAB3_ASSIMP")
 #set_target_properties(Lab3 PROPERTIES COMPILE_DEFINITIONS "USE_LAB3_ASSIMP")

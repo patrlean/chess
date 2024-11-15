@@ -167,8 +167,11 @@ int main( void )
     double lastTime = glfwGetTime();
     int nbFrames = 0;
 
+    // ??????
+    startInputThread();
+
     do{
-        // Process command from console
+        // ?????????????
         processCommand();
 
         // Measure speed
@@ -243,6 +246,9 @@ int main( void )
     } // Check if the ESC key was pressed or the window was closed
     while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
            glfwWindowShouldClose(window) == 0 );
+
+    // ??????
+    cleanupInputThread();
 
     // Cleanup VBO, Texture (Done in class destructor) and shader 
     glDeleteProgram(programID);

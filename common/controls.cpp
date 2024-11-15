@@ -21,11 +21,21 @@ using namespace glm;
 #include <vector>
 #include "controls.hpp"
 #include "Global.hpp"
+#include <thread>
+#include <mutex>
+#include <queue>
+#include <atomic>
 
 glm::mat4 ViewMatrix;
 glm::mat4 ProjectionMatrix;
 bool toggleSDColor=true;
 int dbnceCnt = 20;
+
+// 添加全局变量
+std::thread inputThread;
+std::queue<std::string> commandQueue;
+std::mutex queueMutex;
+std::atomic<bool> isRunning(true);
 
 glm::mat4 getViewMatrix(){
 	return ViewMatrix;
@@ -119,7 +129,7 @@ void computeMatricesFromInputs(){
 
 	float FoV = initialFoV;// - 5 * glfwGetMouseWheel(); // Now GLFW 3 requires setting up a callback for this. It's a bit too complicated for this beginner's tutorial, so it's disabled instead.
 
-	// Projection matrix : 45� Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
+	// Projection matrix : 45 Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
 	ProjectionMatrix = glm::perspective(glm::radians(FoV), 4.0f / 3.0f, 0.1f, 100.0f);
 	// Camera matrix
 	ViewMatrix       = glm::lookAt(
@@ -135,13 +145,13 @@ void computeMatricesFromInputs(){
 // A custom function for Lab3
 // Creates the view and Projection matrix based on following custom key definitions
 // keyboard inputs definitions
-//1) �w� key moves the camera radially closer to the origin.
-//2) �s� key moves the camera radially farther from the origin.
-//3) �a� key rotates the camera to the left maintaining the radial distance from the origin.
-//4) �d� key rotates to camera to the right maintaining the radial distance from the origin.
+//1)w key moves the camera radially closer to the origin.
+//2)s key moves the camera radially farther from the origin.
+//3)a key rotates the camera to the left maintaining the radial distance from the origin.
+//4)d key rotates to camera to the right maintaining the radial distance from the origin.
 //5) The up arrow key radially rotates the camera up.
 //6) The down arrow radially rotates the camera down.
-//7) The �L� key toggles the specular and diffuse components of the light on and off but leaves the ambient component unchanged.
+//7) TheL key toggles the specular and diffuse components of the light on and off but leaves the ambient component unchanged.
 //8) Pressing the escape key closes the window and exits the program
 
 std::vector<std::string> splitString(const std::string& input) {
@@ -154,10 +164,31 @@ std::vector<std::string> splitString(const std::string& input) {
     return tokens;
 }
 
+// 新增输入处理线程函数
+void inputThreadFunction() {
+    while (isRunning) {
+        std::string input;
+        std::cout << "Please enter a command: ";
+        std::getline(std::cin, input);
+        
+        if (!input.empty()) {
+            std::lock_guard<std::mutex> lock(queueMutex);
+            commandQueue.push(input);
+        }
+    }
+}
+
+// 修改处理命令的函数
 void processCommand() {
     std::string input;
-    std::cout << "Please enter a command: ";
-    std::getline(std::cin, input);
+    {
+        std::lock_guard<std::mutex> lock(queueMutex);
+        if (commandQueue.empty()) {
+            return;
+        }
+        input = commandQueue.front();
+        commandQueue.pop();
+    }
 
     std::vector<std::string> tokens = splitString(input);
     if (tokens.empty()) return;
@@ -236,7 +267,7 @@ void computeMatricesFromInputsLab3()
 	// Up vector (look in the z direction)
 	glm::vec3 up = glm::vec3(0, 0, 1);
 
-	// �w� key moves the camera radially closer to the origin
+	// w key moves the camera radially closer to the origin
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) 
 	{
 		// Last cRadius to avoids camera jerks
@@ -248,12 +279,12 @@ void computeMatricesFromInputsLab3()
 			cRadius = lastcRadius;
 		}
 	}
-	// �s� key moves the camera radially farther from the origin.
+	// s key moves the camera radially farther from the origin.
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) 
 	{
 		cRadius += deltaTime * speedLab3;
 	}
-	// �a� key rotates the camera to the left maintaining the radial distance from the origin.
+	// a key rotates the camera to the left maintaining the radial distance from the origin.
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) 
 	{
 		cPhi += deltaTime * speedLab3;
@@ -263,7 +294,7 @@ void computeMatricesFromInputsLab3()
 			cPhi = cPhi - 360.f;
 		}
 	}
-	// �d� key rotates to camera to the right maintaining the radial distance from the origin
+	// d key rotates to camera to the right maintaining the radial distance from the origin
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) 
 	{
 		cPhi -= deltaTime * speedLab3;
@@ -294,7 +325,7 @@ void computeMatricesFromInputsLab3()
 		}
 	}
 
-	// The �L� key toggles the specular and diffuse components of the light on and off 
+	// The L key toggles the specular and diffuse components of the light on and off 
 	// but leaves the ambient component unchanged.
 	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
 		if (dbnceCnt >= DEB_LIMIT)
@@ -313,7 +344,7 @@ void computeMatricesFromInputsLab3()
 	glm::vec3 position = glm::vec3(posX, posY, posZ);
 	float FoV = initialFoV; // - 5 * glfwGetMouseWheel(); // Now GLFW 3 requires setting up a callback for this. It's a bit too complicated for this beginner's tutorial, so it's disabled instead.
 
-	// Projection matrix : 45� Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
+	// Projection matrix : 45 Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
 	ProjectionMatrix = glm::perspective(glm::radians(FoV), 4.0f / 3.0f, 0.1f, 100.0f);
 
 	// Adjust the UP (ESSENTIAL for Continuus vertical Rotation WITHOUT a FLIP)!
@@ -331,4 +362,17 @@ void computeMatricesFromInputsLab3()
 
 	// For the next frame, the "last time" will be "now"
 	lastTime = currentTime;
+}
+
+// 在主程序初始化时启动输入线程
+void startInputThread() {
+    inputThread = std::thread(inputThreadFunction);
+}
+
+// 在程序结束时清理
+void cleanupInputThread() {
+    isRunning = false;
+    if (inputThread.joinable()) {
+        inputThread.join();
+    }
 }
