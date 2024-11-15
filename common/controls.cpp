@@ -15,7 +15,12 @@ extern GLFWwindow* window; // The "extern" keyword here is to access the variabl
 #include <glm/gtc/matrix_transform.hpp>
 using namespace glm;
 
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
 #include "controls.hpp"
+#include "Global.hpp"
 
 glm::mat4 ViewMatrix;
 glm::mat4 ProjectionMatrix;
@@ -47,9 +52,9 @@ float speed = 3.0f; // 3 units / second
 float mouseSpeed = 0.005f;
 
 // Lab3 key movement coordinates (spherical)
-float cRadius = 10.0f;
+float cRadius = 35.0f;
 float cPhi = -90.f;
-float cTheta = 90.0f;
+float cTheta = 0.0f;
 
 // Speed
 float speedLab3 = 10.0f; // 3 units / second
@@ -114,7 +119,7 @@ void computeMatricesFromInputs(){
 
 	float FoV = initialFoV;// - 5 * glfwGetMouseWheel(); // Now GLFW 3 requires setting up a callback for this. It's a bit too complicated for this beginner's tutorial, so it's disabled instead.
 
-	// Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
+	// Projection matrix : 45ï¿½ Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
 	ProjectionMatrix = glm::perspective(glm::radians(FoV), 4.0f / 3.0f, 0.1f, 100.0f);
 	// Camera matrix
 	ViewMatrix       = glm::lookAt(
@@ -130,14 +135,85 @@ void computeMatricesFromInputs(){
 // A custom function for Lab3
 // Creates the view and Projection matrix based on following custom key definitions
 // keyboard inputs definitions
-//1) ‘w’ key moves the camera radially closer to the origin.
-//2) ‘s’ key moves the camera radially farther from the origin.
-//3) ‘a’ key rotates the camera to the left maintaining the radial distance from the origin.
-//4) ‘d’ key rotates to camera to the right maintaining the radial distance from the origin.
+//1) ï¿½wï¿½ key moves the camera radially closer to the origin.
+//2) ï¿½sï¿½ key moves the camera radially farther from the origin.
+//3) ï¿½aï¿½ key rotates the camera to the left maintaining the radial distance from the origin.
+//4) ï¿½dï¿½ key rotates to camera to the right maintaining the radial distance from the origin.
 //5) The up arrow key radially rotates the camera up.
 //6) The down arrow radially rotates the camera down.
-//7) The ‘L’ key toggles the specular and diffuse components of the light on and off but leaves the ambient component unchanged.
+//7) The ï¿½Lï¿½ key toggles the specular and diffuse components of the light on and off but leaves the ambient component unchanged.
 //8) Pressing the escape key closes the window and exits the program
+
+std::vector<std::string> splitString(const std::string& input) {
+    std::vector<std::string> tokens;
+    std::stringstream ss(input);
+    std::string token;
+    while (ss >> token) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
+void processCommand() {
+    std::string input;
+    std::cout << "Please enter a command: ";
+    std::getline(std::cin, input);
+
+    std::vector<std::string> tokens = splitString(input);
+    if (tokens.empty()) return;
+
+    std::string command = tokens[0];
+
+    if (command == "move") {
+        if (tokens.size() != 2) {
+            std::cout << "Invalid command or move!!" << std::endl;
+            return;
+        }
+        std::string move = tokens[1];
+        // è¿™é‡Œæ·»åŠ å¤„ç†ç§»åŠ¨çš„é€»è¾‘
+        if (move.length() != 4) {
+            std::cout << "Invalid command or move!!" << std::endl;
+            return;
+        }
+        // å¤„ç†ç§»åŠ¨å‘½ä»¤
+        // TODO: æ·»åŠ å…·ä½“çš„ç§»åŠ¨é€»è¾‘
+    }
+    else if (command == "camera") {
+        if (tokens.size() != 4) {
+            std::cout << "Invalid command or move!!" << std::endl;
+            return;
+        }
+        try {
+            float radius = std::stof(tokens[1]);
+            float phi = std::stof(tokens[2]);
+            float theta = std::stof(tokens[3]);
+            
+            // æ›´æ–°ç›¸æœºå‚æ•°
+            cRadius = radius;
+            cPhi = phi;
+            cTheta = theta;
+        }
+        catch (...) {
+            std::cout << "Invalid command or move!!" << std::endl;
+        }
+    }
+    else if (command == "power") {
+        if (tokens.size() != 2) {
+            std::cout << "Invalid command or move!!" << std::endl;
+            return;
+        }
+        try {
+            float power = std::stof(tokens[1]);
+            lightPower = power;
+        }
+        catch (...) {
+            std::cout << "Invalid command or move!!" << std::endl;
+        }
+    }
+    else {
+        std::cout << "Invalid command or move!!" << std::endl;
+    }
+}
 
 void computeMatricesFromInputsLab3()
 {
@@ -160,7 +236,7 @@ void computeMatricesFromInputsLab3()
 	// Up vector (look in the z direction)
 	glm::vec3 up = glm::vec3(0, 0, 1);
 
-	// ‘w’ key moves the camera radially closer to the origin
+	// ï¿½wï¿½ key moves the camera radially closer to the origin
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) 
 	{
 		// Last cRadius to avoids camera jerks
@@ -172,12 +248,12 @@ void computeMatricesFromInputsLab3()
 			cRadius = lastcRadius;
 		}
 	}
-	// ‘s’ key moves the camera radially farther from the origin.
+	// ï¿½sï¿½ key moves the camera radially farther from the origin.
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) 
 	{
 		cRadius += deltaTime * speedLab3;
 	}
-	// ‘a’ key rotates the camera to the left maintaining the radial distance from the origin.
+	// ï¿½aï¿½ key rotates the camera to the left maintaining the radial distance from the origin.
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) 
 	{
 		cPhi += deltaTime * speedLab3;
@@ -187,7 +263,7 @@ void computeMatricesFromInputsLab3()
 			cPhi = cPhi - 360.f;
 		}
 	}
-	// ‘d’ key rotates to camera to the right maintaining the radial distance from the origin
+	// ï¿½dï¿½ key rotates to camera to the right maintaining the radial distance from the origin
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) 
 	{
 		cPhi -= deltaTime * speedLab3;
@@ -218,7 +294,7 @@ void computeMatricesFromInputsLab3()
 		}
 	}
 
-	// The ‘L’ key toggles the specular and diffuse components of the light on and off 
+	// The ï¿½Lï¿½ key toggles the specular and diffuse components of the light on and off 
 	// but leaves the ambient component unchanged.
 	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
 		if (dbnceCnt >= DEB_LIMIT)
@@ -237,7 +313,7 @@ void computeMatricesFromInputsLab3()
 	glm::vec3 position = glm::vec3(posX, posY, posZ);
 	float FoV = initialFoV; // - 5 * glfwGetMouseWheel(); // Now GLFW 3 requires setting up a callback for this. It's a bit too complicated for this beginner's tutorial, so it's disabled instead.
 
-	// Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
+	// Projection matrix : 45ï¿½ Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
 	ProjectionMatrix = glm::perspective(glm::radians(FoV), 4.0f / 3.0f, 0.1f, 100.0f);
 
 	// Adjust the UP (ESSENTIAL for Continuus vertical Rotation WITHOUT a FLIP)!

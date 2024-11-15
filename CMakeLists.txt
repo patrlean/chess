@@ -31,7 +31,6 @@ if(INCLUDE_DISTRIB)
 endif(INCLUDE_DISTRIB)
 
 
-
 include_directories(
 	external/AntTweakBar-1.16/include/
 	external/glfw-3.1.2/include/
@@ -60,6 +59,8 @@ add_definitions(
 # Lab3 - Lab3 ECE-6121
 add_executable(Lab3
 	Lab3/chess_3D_view.cpp
+	common/Global.cpp
+	common/Global.hpp
 	common/shader.cpp
 	common/shader.hpp
 	common/controls.cpp

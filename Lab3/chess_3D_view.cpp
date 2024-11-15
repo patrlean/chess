@@ -43,7 +43,7 @@ using namespace glm;
 #include "chessComponent.h"
 #include "chessCommon.h"
 
-// #include <unistd.h>
+#include "common/Global.hpp"
 
 // Sets up the chess board
 void setupChessBoard(tModelMap& cTModelMap);
@@ -161,22 +161,27 @@ int main( void )
     // Get a handle for our "LightPosition" uniform
     GLuint LightID = glGetUniformLocation(programID, "LightPosition_worldspace");
 
+    GLuint LightPowerID = glGetUniformLocation(programID, "lightPower");
+
     // For speed computation
     double lastTime = glfwGetTime();
     int nbFrames = 0;
 
     do{
+        // Process command from console
+        processCommand();
+
         // Measure speed
-        double currentTime = glfwGetTime();
-        nbFrames++;
+        // double currentTime = glfwGetTime();
+        // nbFrames++;
 
         // If last prinf() was more than 1sec ago
-        if (currentTime - lastTime >= 1.0) { // If last prinf() was more than 1sec ago
-            // printf and reset
-            printf("%f ms/frame\n", 1000.0 / double(nbFrames));
-            nbFrames = 0;
-            lastTime += 1.0;
-        }
+        // if (currentTime - lastTime >= 1.0) { // If last prinf() was more than 1sec ago
+        //     // printf and reset
+        //     printf("%f ms/frame\n", 1000.0 / double(nbFrames));
+        //     nbFrames = 0;
+        //     lastTime += 1.0;
+        // }
 
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -219,6 +224,9 @@ int main( void )
                 // the board!
                 glm::vec3 lightPos = glm::vec3(0, 0, 15);
                 glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
+                
+                // Pass light power to fragment shader
+                glUniform1f(LightPowerID, lightPower);
 
                 // Bind our texture (set it up)
                 cit->setupTexture(TextureID);
