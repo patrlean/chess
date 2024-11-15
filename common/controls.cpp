@@ -218,7 +218,11 @@ void processCommand() {
             float radius = std::stof(tokens[1]);
             float phi = std::stof(tokens[2]);
             float theta = std::stof(tokens[3]);
-            
+            // check if the input is valid
+            if (radius < 10 || radius > 80 || phi < 0 || phi > 360 || theta < 0 ) {
+                std::cout << "Invalid command or move!!" << std::endl;
+                return;
+            }
             // update camera position
             cRadius = radius;
             cPhi = phi;
