@@ -35,7 +35,7 @@ int dbnceCnt = 20;
 std::thread inputThread;
 std::queue<std::string> commandQueue;
 std::mutex queueMutex;
-std::atomic<bool> isRunning(true);
+
 
 glm::mat4 getViewMatrix(){
 	return ViewMatrix;
@@ -178,7 +178,7 @@ void inputThreadFunction() {
     }
 }
 
-// 修改处理命令的函数
+// process command from console
 void processCommand() {
     std::string input;
     {
@@ -219,7 +219,7 @@ void processCommand() {
             float phi = std::stof(tokens[2]);
             float theta = std::stof(tokens[3]);
             
-            // 更新相机参数
+            // update camera position
             cRadius = radius;
             cPhi = phi;
             cTheta = theta;
@@ -241,6 +241,9 @@ void processCommand() {
             std::cout << "Invalid command or move!!" << std::endl;
         }
     }
+	else if (command == "quit") {
+		isRunning = false;
+	}
     else {
         std::cout << "Invalid command or move!!" << std::endl;
     }
