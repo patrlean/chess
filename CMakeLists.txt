@@ -67,8 +67,13 @@ add_executable(Lab3
 	common/texture.hpp
 	common/objloader.cpp
 	common/objloader.hpp
-	Lab3/chessComponent.cpp
+	common/chessPosition.hpp
+	common/utils.hpp
+	common/utils.cpp
 	
+	Lab3/chessComponent.cpp
+	Lab3/chessComponent.h
+	Lab3/chessCommon.h
 	Lab3/StandardShading.vertexshader
 	Lab3/StandardShading.fragmentshader
 )

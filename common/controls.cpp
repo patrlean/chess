@@ -6,25 +6,7 @@ for ECE6122 Labs. It does NOT touch the existing functions.
 
 */
 
-// Include GLFW
-#include <GLFW/glfw3.h>
-extern GLFWwindow* window; // The "extern" keyword here is to access the variable "window" declared in tutorialXXX.cpp. This is a hack to keep the tutorials simple. Please avoid this.
-
-// Include GLM
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-using namespace glm;
-
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>
-#include "controls.hpp"
-#include "Global.hpp"
-#include <thread>
-#include <mutex>
-#include <queue>
-#include <atomic>
+#include "common/controls.hpp"
 
 glm::mat4 ViewMatrix;
 glm::mat4 ProjectionMatrix;
@@ -74,21 +56,7 @@ const int DEB_LIMIT = 40;
 
 // 棋盘坐标转换结构体
 
-// 将UCI格式坐标(如"e2")转换为内部坐标系统
-ChessPosition uciToPosition(const std::string& uciPos) {
-    ChessPosition pos;
-    if (uciPos.length() != 2) return {-1, -1};
-    
-    pos.x = tolower(uciPos[0]) - 'a';
-    pos.y = uciPos[1] - '1';
-    
-    // 验证坐标是否有效
-    if (pos.x < 0 || pos.x > 7 || pos.y < 0 || pos.y > 7) {
-        return {-1, -1};
-    }
-    
-    return pos;
-}
+
 
 // 验证移动是否合法
 bool isValidMove(const std::string& move) {
@@ -209,7 +177,7 @@ void inputThreadFunction() {
 }
 
 // process command from console
-void processCommand() {
+void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComponents) {
     std::string input;
     {
         std::lock_guard<std::mutex> lock(queueMutex);
@@ -236,13 +204,26 @@ void processCommand() {
             std::cout << "Invalid move coordinates!" << std::endl;
             return;
         }
-
+		
         ChessPosition from = uciToPosition(move.substr(0, 2));
         ChessPosition to = uciToPosition(move.substr(2, 2));
 
-        // 更新棋子位置
-        // 这里需要调用您的棋子移动函数
-        // 例如：moveChessPiece(from, to);
+		std::string pieceID;
+	
+        // 查找from位置上面的棋子
+		chessComponent* piece = nullptr;
+		for (auto& pieces : tModelMap) {
+			std::vector<tPosition> cTPositions = pieces.second;
+			for (auto& cTPosition : cTPositions) {
+				if (getComponentIDAtFrom(from, cTPosition) != "nan") {
+					pieceID = getComponentIDAtFrom(from, cTPosition);
+					break;
+				}
+			}
+		}
+		std::cout << "pieceID: " << pieceID << std::endl;
+        
+        moveChessPiece(from, to, piece);
         
         std::cout << "Moving piece from " << move.substr(0, 2) 
                   << " to " << move.substr(2, 2) << std::endl;
@@ -420,4 +401,9 @@ void cleanupInputThread() {
     if (inputThread.joinable()) {
         inputThread.join();
     }
+}
+
+void moveChessPiece(const ChessPosition& from, const ChessPosition& to, chessComponent* piece) {
+    // 实现棋子移动逻辑
+    std::cout << "Moving piece from " << from.x << "," << from.y << " to " << to.x << "," << to.y << std::endl;
 }

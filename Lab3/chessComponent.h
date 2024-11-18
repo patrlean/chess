@@ -11,6 +11,7 @@ Chess component class header file
 #include <vector>
 #include <regex>
 #include "chessCommon.h"
+#include "common/chessPosition.hpp"
 
 // Include GLM
 #include <glm/glm.hpp>
@@ -126,6 +127,7 @@ public:
     // Inputs: None
     // Output: ID
     std::string getComponentID();
+    
 };
 
 #endif

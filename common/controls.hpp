@@ -9,19 +9,42 @@ for ECE6122 Labs. It does NOT touch the existing functions.
 #ifndef CONTROLS_HPP
 #define CONTROLS_HPP
 
-#include <iostream>
+#include <GL/glew.h>
+// Include GLFW
+#include <GLFW/glfw3.h>
+extern GLFWwindow* window; // The "extern" keyword here is to access the variable "window" declared in tutorialXXX.cpp. This is a hack to keep the tutorials simple. Please avoid this.
 
-struct ChessPosition {
-    int x; // 0-7 对应 a-h
-    int y; // 0-7 对应 1-8
-};
+// Include GLM
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+using namespace glm;
+
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+#include "controls.hpp"
+#include "Global.hpp"
+#include <thread>
+#include <mutex>
+#include <queue>
+#include <atomic>
+#include <unordered_map>
+
+
+#include "common/utils.hpp"
+#include "common/chessPosition.hpp"
+#include "Lab3/chessComponent.h"
+
+
+
 
 void computeMatricesFromInputs();
 glm::mat4 getViewMatrix();
 glm::mat4 getProjectionMatrix();
 bool getLightSwitch();
 std::vector<std::string> splitString(const std::string& input);
-void processCommand();
+void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComponents);
 
 // A custom function for Lab3
 // Creates the view and Projection matrix based on following custom key definitions
@@ -38,5 +61,5 @@ void processCommand();
 void computeMatricesFromInputsLab3();
 void startInputThread();
 void cleanupInputThread();
-
+void moveChessPiece(const ChessPosition& from, const ChessPosition& to, chessComponent* piece);
 #endif
