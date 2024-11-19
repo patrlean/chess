@@ -61,5 +61,7 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
 void computeMatricesFromInputsLab3();
 void startInputThread();
 void cleanupInputThread();
-void moveChessPiece(const ChessPosition& from, const ChessPosition& to, chessComponent* piece);
+void moveChessPiece(const ChessPosition& from, const ChessPosition& to, std::string pieceID);
+void moveChessPieceThread(ChessPosition from, ChessPosition to, std::string pieceID);
+void moveKnightPiece(const ChessPosition& from, const ChessPosition& to, std::string pieceID);
 #endif

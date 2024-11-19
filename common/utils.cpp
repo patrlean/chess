@@ -32,3 +32,9 @@ ChessPosition tPosToChessPosition(glm::vec3 tPos) {
     pos.y = (tPos.y - (-3.5f * CHESS_BOX_SIZE)) / CHESS_BOX_SIZE;
     return pos;
 }
+
+// input: chess position in integer
+// output: tPos
+glm::vec3 chessPositionToTPos(ChessPosition chessPos) {
+    return glm::vec3((chessPos.x * CHESS_BOX_SIZE) + (-3.5f * CHESS_BOX_SIZE), (chessPos.y * CHESS_BOX_SIZE) + (-3.5f * CHESS_BOX_SIZE), PHEIGHT);
+}

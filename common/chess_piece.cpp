@@ -194,3 +194,5 @@ void renderChessPieces(const std::vector<ChessPiece>& pieces,
 void movePiece(ChessPiece& piece, int toRow, int toCol) {
     piece.position = ChessboardHelper::getSquarePosition(toRow, toCol);
 }
+
+

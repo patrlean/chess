@@ -100,5 +100,6 @@ void renderChessPieces(const std::vector<ChessPiece>& pieces,
 void movePiece(ChessPiece& piece, int toRow, int toCol);
 
 void createGLBuffers(ChessPiece& piece);
+glm::vec3 getSquarePosition(const int x, const int y);
 
 #endif // CHESS_PIECE_H

@@ -10,11 +10,17 @@
 // input: UCI coordinate 
 // output: component ID
 std::string getComponentIDAtFrom(ChessPosition& from, tPosition & cTposition);
+
 // input: UCI coordinate 
-// output: ChessPosition
+// output: chess position in integer
 ChessPosition uciToPosition(const std::string& uciPos);
+
 // input: tPos
-// output: ChessPosition
+// output: chess position in integer
 ChessPosition tPosToChessPosition(glm::vec3 tPos);
+
+// input: chess position in integer
+// output: tPos
+glm::vec3 chessPositionToTPos(ChessPosition chessPos);
 
 #endif // UTILS_HPP

@@ -7,6 +7,8 @@ for ECE6122 Labs. It does NOT touch the existing functions.
 */
 
 #include "common/controls.hpp"
+#include <chrono>
+#include <thread>
 
 glm::mat4 ViewMatrix;
 glm::mat4 ProjectionMatrix;
@@ -211,7 +213,6 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
 		std::string pieceID;
 	
         // 查找from位置上面的棋子
-		chessComponent* piece = nullptr;
 		for (auto& pieces : tModelMap) {
 			std::vector<tPosition> cTPositions = pieces.second;
 			for (auto& cTPosition : cTPositions) {
@@ -223,7 +224,8 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
 		}
 		std::cout << "pieceID: " << pieceID << std::endl;
         
-        moveChessPiece(from, to, piece);
+        std::thread moveThread(moveChessPieceThread, from, to, pieceID);
+        moveThread.detach();
         
         std::cout << "Moving piece from " << move.substr(0, 2) 
                   << " to " << move.substr(2, 2) << std::endl;
@@ -403,7 +405,111 @@ void cleanupInputThread() {
     }
 }
 
-void moveChessPiece(const ChessPosition& from, const ChessPosition& to, chessComponent* piece) {
-    // 实现棋子移动逻辑
+void moveChessPieceThread(ChessPosition from, ChessPosition to, std::string pieceID) {
+	if (pieceID == "white_knight1" || pieceID == "white_knight2" || pieceID == "black_knight1" || pieceID == "black_knight2") {
+		moveKnightPiece(from, to, pieceID);
+	} else {
+		moveChessPiece(from, to, pieceID);
+	}
+}
+
+void moveKnightPiece(const ChessPosition& from, const ChessPosition& to, std::string pieceID) {
+	std::cout << "Moving piece from " << from.x << "," << from.y << " to " << to.x << "," << to.y << std::endl;
+    std::cout << "pieceID: " << pieceID << std::endl;
+
+    // 获取起点和终点的3D坐标
+    glm::vec3 startPos = chessPositionToTPos(from);
+    glm::vec3 endPos = chessPositionToTPos(to);
+    
+    // 动画参数
+    const float animationDuration = 2.0f; // 动画持续2秒
+    const int frames = 60; // 60帧动画
+    const float frameTime = animationDuration / frames; // 每帧时间
+    
+    // 执行动画
+    for (int frame = 0; frame <= frames; frame++) {
+        float t = static_cast<float>(frame) / frames; // 插值参数 (0.0 到 1.0)
+        
+        // 使用平滑的缓动函数
+        t = t * t * (3 - 2 * t); // 使用平滑插值
+        
+        // 计算当前位置
+        glm::vec3 currentPos = startPos * (1.0f - t) + endPos * t;
+        // 添加一个抛物线运动
+        currentPos.y += sin(t * 3.14159f) * 0.5f; // 添加垂直运动
+		currentPos.z -= sin(t * 3.14159f) * 2 * PHEIGHT; // 添加垂直运动
+        
+        // 更新棋子位置
+        for (auto& pieces : cTModelMap) {
+            std::vector<tPosition>& cTPositions = pieces.second;
+            for (auto& cTPosition : cTPositions) {
+                if (cTPosition.nameIdentifier == pieceID) {
+                    cTPosition.tPos = currentPos;
+                }
+            }
+        }
+        
+        // 等待一帧的时间
+        std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frameTime * 1000)));
+    }
+    
+    // 确保最终位置精确
+    for (auto& pieces : cTModelMap) {
+        std::vector<tPosition>& cTPositions = pieces.second;
+        for (auto& cTPosition : cTPositions) {
+            if (cTPosition.nameIdentifier == pieceID) {
+                cTPosition.tPos = endPos;
+            }
+        }
+    }
+}
+
+void moveChessPiece(const ChessPosition& from, const ChessPosition& to, std::string pieceID) {
     std::cout << "Moving piece from " << from.x << "," << from.y << " to " << to.x << "," << to.y << std::endl;
+    std::cout << "pieceID: " << pieceID << std::endl;
+
+    // 获取起点和终点的3D坐标
+    glm::vec3 startPos = chessPositionToTPos(from);
+    glm::vec3 endPos = chessPositionToTPos(to);
+    
+    // 动画参数
+    const float animationDuration = 2.0f; // 动画持续2秒
+    const int frames = 60; // 60帧动画
+    const float frameTime = animationDuration / frames; // 每帧时间
+    
+    // 执行动画
+    for (int frame = 0; frame <= frames; frame++) {
+        float t = static_cast<float>(frame) / frames; // 插值参数 (0.0 到 1.0)
+        
+        // 使用平滑的缓动函数
+        t = t * t * (3 - 2 * t); // 使用平滑插值
+        
+        // 计算当前位置
+        glm::vec3 currentPos = startPos * (1.0f - t) + endPos * t;
+        // 添加一个抛物线运动
+        currentPos.y += sin(t * 3.14159f) * 0.5f; // 添加垂直运动
+        
+        // 更新棋子位置
+        for (auto& pieces : cTModelMap) {
+            std::vector<tPosition>& cTPositions = pieces.second;
+            for (auto& cTPosition : cTPositions) {
+                if (cTPosition.nameIdentifier == pieceID) {
+                    cTPosition.tPos = currentPos;
+                }
+            }
+        }
+        
+        // 等待一帧的时间
+        std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frameTime * 1000)));
+    }
+    
+    // 确保最终位置精确
+    for (auto& pieces : cTModelMap) {
+        std::vector<tPosition>& cTPositions = pieces.second;
+        for (auto& cTPosition : cTPositions) {
+            if (cTPosition.nameIdentifier == pieceID) {
+                cTPosition.tPos = endPos;
+            }
+        }
+    }
 }

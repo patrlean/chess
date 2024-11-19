@@ -10,6 +10,7 @@ Game of Chess common file
 #include <unordered_map>
 // Include GLM
 #include <glm/glm.hpp>
+#include <vector>
 
 // Mesh properties has table
 typedef struct 

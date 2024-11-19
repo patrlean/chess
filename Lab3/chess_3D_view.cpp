@@ -141,7 +141,6 @@ int main( void )
     }
 
     // Setup the Chess board locations
-    tModelMap cTModelMap;
     setupChessBoard(cTModelMap);
      
     // Load it into a VBO (One time activity)
