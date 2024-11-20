@@ -8,5 +8,6 @@ extern float lightPower;
 extern bool isRunning;
 extern tModelMap cTModelMap;
 extern ECE_ChessEngine engine;
+extern std::vector<std::string> moveHistory;
 
 #endif // GLOBAL_H

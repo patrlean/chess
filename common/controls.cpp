@@ -71,7 +71,7 @@ bool isValidMove(const std::string& move) {
     ChessPosition to = uciToPosition(move.substr(2, 2));
     
     // 检查坐标是否有效
-    if (from.x == -1 || to.x == -1) return false;
+    if (from.x < 0 || from.x > 8 || to.x < 0 || to.x > 8 || from.y < 0 || from.y > 8 || to.y < 0 || to.y > 8) return false;
     
     return true;
 }
@@ -187,19 +187,24 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
     if (tokens.empty()) return;
 
     std::string command = tokens[0];
-
+	std::string move = tokens[1];
     if (command == "move") {
+		/*
+		1st: get response from engine
+		2nd: move white chess piece
+		3rd: move black chess piece
+		4th: update move history
+		*/
+
+		// 1st: get response from engine
 		// check validation
-        if (tokens.size() != 2) {
-            std::cout << "Invalid move format! Use format like 'move e2e4'" << std::endl;
-            return;
-        }
-        std::string move = tokens[1];
         if (!isValidMove(move)) {
             std::cout << "Invalid move coordinates!" << std::endl;
             return;
         }
-		std::string sendingFen = "position startpos moves " + move;
+		// move is the current move
+		// sending message is the combination of current move and all previous moves
+		std::string sendingFen = getCurrentFen(move);
 		if (!engine.SendMove(sendingFen)) {
 			std::cout << "Failed to send move to engine!" << std::endl;
 			return;
@@ -211,9 +216,7 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
 		std::cout << "Sent move to engine: " << sendingFen << std::endl;
 		// get the best move from engine
 		std::string response;
-		while ((response = engine.ReadFromEngine()).find("bestmove") == std::string::npos) {
-			std::cout << "Waiting for best move from engine..." << std::endl;
-		}
+		while ((response = engine.ReadFromEngine()).find("bestmove") == std::string::npos) {std::cout << "Waiting for best move from engine..." << std::endl;}
 		std::cout << "Received best move from engine: " << response << std::endl;
 		// split the response to get the best move
 		std::string bestMove;
@@ -222,9 +225,15 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
 			std::cout << "Invalid move coordinates!" << std::endl;
 			return;
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		// check move validation
+		if (bestMove == "0000") {
+			std::cout << "Invalid move!" << std::endl;
+			return;
+		}
+		// std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		firstMoveComplete = false;
 
+		// 2nd: move white chess piece
         ChessPosition from = uciToPosition(move.substr(0, 2));
         ChessPosition to = uciToPosition(move.substr(2, 2));
 		
@@ -244,7 +253,7 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
 		moveThread.detach();
 		
 
-		// 第二个移动
+		// 3rd: move black chess piece
 		ChessPosition from2 = uciToPosition(bestMove.substr(0, 2));
         ChessPosition to2 = uciToPosition(bestMove.substr(2, 2));
 		std::string pieceID2;
@@ -267,6 +276,10 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
 			moveChessPieceThread(from2, to2, pieceID2, false);
 		});
 		bestMoveThread.detach();
+
+		// 4th: update move history
+		moveHistory.push_back(move);
+		moveHistory.push_back(bestMove);
     }
     else if (command == "camera") {
         if (tokens.size() != 4) {
@@ -558,3 +571,15 @@ void moveChessPiece(const ChessPosition& from, const ChessPosition& to, std::str
         }
     }
 }
+
+// input: current move
+// output: fen string
+std::string getCurrentFen(const std::string& move) {
+	std::string fen = "position startpos moves ";
+	for (const auto& m : moveHistory) {
+		fen += m + " ";
+	}
+	fen += move;	
+	return fen;
+}
+

@@ -61,4 +61,5 @@ void cleanupInputThread();
 void moveChessPiece(const ChessPosition& from, const ChessPosition& to, std::string pieceID);
 void moveChessPieceThread(ChessPosition from, ChessPosition to, std::string pieceID, bool isFirstMove);
 void moveKnightPiece(const ChessPosition& from, const ChessPosition& to, std::string pieceID);
+std::string getCurrentFen(const std::string& move);
 #endif

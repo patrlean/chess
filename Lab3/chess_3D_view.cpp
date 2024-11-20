@@ -174,8 +174,11 @@ int main( void )
     }
     engine.SendMove("uci");
     std::cout << "Engine Response: " << engine.ReadFromEngine() << std::endl;
+    engine.SendMove("ucinewgame");
+    std::cout << "Engine Response: " << engine.ReadFromEngine() << std::endl;
     engine.SendMove("isready");
     std::cout << "Engine Response: " << engine.ReadFromEngine() << std::endl;
+    
 
     do{
         processCommand(cTModelMap, gchessComponents);
