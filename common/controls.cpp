@@ -6,7 +6,9 @@ for ECE6122 Labs. It does NOT touch the existing functions.
 
 */
 
-#include "common/controls.hpp"
+#include "controls.hpp"
+#include "Global.hpp"
+#include "utils.hpp"
 #include <chrono>
 #include <thread>
 
@@ -19,6 +21,11 @@ int dbnceCnt = 20;
 std::thread inputThread;
 std::queue<std::string> commandQueue;
 std::mutex queueMutex;
+std::mutex modelMapMutex;
+
+std::mutex moveMutex;
+std::condition_variable moveCondition;
+std::atomic<bool> firstMoveComplete(false);
 
 
 glm::mat4 getViewMatrix(){
@@ -55,10 +62,6 @@ float speedLab3 = 10.0f; // 3 units / second
 
 // Debounce limit
 const int DEB_LIMIT = 40;
-
-// 棋盘坐标转换结构体
-
-
 
 // 验证移动是否合法
 bool isValidMove(const std::string& move) {
@@ -154,16 +157,6 @@ void computeMatricesFromInputs(){
 //7) TheL key toggles the specular and diffuse components of the light on and off but leaves the ambient component unchanged.
 //8) Pressing the escape key closes the window and exits the program
 
-std::vector<std::string> splitString(const std::string& input) {
-    std::vector<std::string> tokens;
-    std::stringstream ss(input);
-    std::string token;
-    while (ss >> token) {
-        tokens.push_back(token);
-    }
-    return tokens;
-}
-
 // input thread function
 void inputThreadFunction() {
     while (isRunning) {
@@ -196,20 +189,45 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
     std::string command = tokens[0];
 
     if (command == "move") {
+		// check validation
         if (tokens.size() != 2) {
             std::cout << "Invalid move format! Use format like 'move e2e4'" << std::endl;
             return;
         }
-        
         std::string move = tokens[1];
         if (!isValidMove(move)) {
             std::cout << "Invalid move coordinates!" << std::endl;
             return;
         }
-		
+		std::string sendingFen = "position startpos moves " + move;
+		if (!engine.SendMove(sendingFen)) {
+			std::cout << "Failed to send move to engine!" << std::endl;
+			return;
+		}
+		if (!engine.SendMove("go depth 5")) {
+			std::cout << "Failed to send go depth 5 to engine!" << std::endl;
+			return;
+		}
+		std::cout << "Sent move to engine: " << sendingFen << std::endl;
+		// get the best move from engine
+		std::string response;
+		while ((response = engine.ReadFromEngine()).find("bestmove") == std::string::npos) {
+			std::cout << "Waiting for best move from engine..." << std::endl;
+		}
+		std::cout << "Received best move from engine: " << response << std::endl;
+		// split the response to get the best move
+		std::string bestMove;
+		std::vector<std::string> tokens = splitString(response);
+		if (!engine.getResponseMove(tokens, bestMove)) {
+			std::cout << "Invalid move coordinates!" << std::endl;
+			return;
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		firstMoveComplete = false;
+
         ChessPosition from = uciToPosition(move.substr(0, 2));
         ChessPosition to = uciToPosition(move.substr(2, 2));
-
+		
 		std::string pieceID;
 	
         // 查找from位置上面的棋子
@@ -222,13 +240,33 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
 				}
 			}
 		}
-		std::cout << "pieceID: " << pieceID << std::endl;
+		std::thread moveThread(moveChessPieceThread, from, to, pieceID, true);
+		moveThread.detach();
+		
+
+		// 第二个移动
+		ChessPosition from2 = uciToPosition(bestMove.substr(0, 2));
+        ChessPosition to2 = uciToPosition(bestMove.substr(2, 2));
+		std::string pieceID2;
+		// 查找from位置上面的棋子
+		for (auto& pieces : tModelMap) {
+			std::vector<tPosition> cTPositions = pieces.second;
+			for (auto& cTPosition : cTPositions) {
+				if (getComponentIDAtFrom(from2, cTPosition) != "nan") {
+					pieceID2 = getComponentIDAtFrom(from2, cTPosition);
+					break;
+				}
+			}
+		}
         
-        std::thread moveThread(moveChessPieceThread, from, to, pieceID);
-        moveThread.detach();
-        
-        std::cout << "Moving piece from " << move.substr(0, 2) 
-                  << " to " << move.substr(2, 2) << std::endl;
+        std::thread bestMoveThread([from2, to2, pieceID2]() {
+			std::unique_lock<std::mutex> lock(moveMutex);
+			moveCondition.wait(lock, []{ return firstMoveComplete.load(); });
+			
+			// 第一个移动完成后，执行第二个移动
+			moveChessPieceThread(from2, to2, pieceID2, false);
+		});
+		bestMoveThread.detach();
     }
     else if (command == "camera") {
         if (tokens.size() != 4) {
@@ -405,12 +443,18 @@ void cleanupInputThread() {
     }
 }
 
-void moveChessPieceThread(ChessPosition from, ChessPosition to, std::string pieceID) {
+void moveChessPieceThread(ChessPosition from, ChessPosition to, std::string pieceID, bool isFirstMove) {
 	if (pieceID == "white_knight1" || pieceID == "white_knight2" || pieceID == "black_knight1" || pieceID == "black_knight2") {
 		moveKnightPiece(from, to, pieceID);
 	} else {
 		moveChessPiece(from, to, pieceID);
 	}
+
+	if (isFirstMove) {
+        // 第一个移动完成后通知等待的线程
+        firstMoveComplete = true;
+        moveCondition.notify_one();
+    }
 }
 
 void moveKnightPiece(const ChessPosition& from, const ChessPosition& to, std::string pieceID) {
@@ -479,36 +523,37 @@ void moveChessPiece(const ChessPosition& from, const ChessPosition& to, std::str
     
     // 执行动画
     for (int frame = 0; frame <= frames; frame++) {
-        float t = static_cast<float>(frame) / frames; // 插值参数 (0.0 到 1.0)
+        float t = static_cast<float>(frame) / frames;
+        t = t * t * (3 - 2 * t);
         
-        // 使用平滑的缓动函数
-        t = t * t * (3 - 2 * t); // 使用平滑插值
-        
-        // 计算当前位置
         glm::vec3 currentPos = startPos * (1.0f - t) + endPos * t;
-        // 添加一个抛物线运动
-        currentPos.y += sin(t * 3.14159f) * 0.5f; // 添加垂直运动
+        currentPos.y += sin(t * 3.14159f) * 0.5f;
         
-        // 更新棋子位置
-        for (auto& pieces : cTModelMap) {
-            std::vector<tPosition>& cTPositions = pieces.second;
-            for (auto& cTPosition : cTPositions) {
-                if (cTPosition.nameIdentifier == pieceID) {
-                    cTPosition.tPos = currentPos;
+        // 添加锁保护
+        {
+            
+            for (auto& pieces : cTModelMap) {
+                std::vector<tPosition>& cTPositions = pieces.second;
+                for (auto& cTPosition : cTPositions) {
+                    if (cTPosition.nameIdentifier == pieceID) {
+                        cTPosition.tPos = currentPos;
+                    }
                 }
             }
         }
         
-        // 等待一帧的时间
         std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(frameTime * 1000)));
     }
     
-    // 确保最终位置精确
-    for (auto& pieces : cTModelMap) {
-        std::vector<tPosition>& cTPositions = pieces.second;
-        for (auto& cTPosition : cTPositions) {
-            if (cTPosition.nameIdentifier == pieceID) {
-                cTPosition.tPos = endPos;
+    // 最终位置也需要加锁
+    {
+        
+        for (auto& pieces : cTModelMap) {
+            std::vector<tPosition>& cTPositions = pieces.second;
+            for (auto& cTPosition : cTPositions) {
+                if (cTPosition.nameIdentifier == pieceID) {
+                    cTPosition.tPos = endPos;
+                }
             }
         }
     }

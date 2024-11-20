@@ -1,6 +1,22 @@
 #include "utils.hpp"    
 
+// input: string
+// output: vector of strings
+// split the string into tokens
+std::vector<std::string> splitString(const std::string& input) {
+    std::vector<std::string> tokens;
+    std::stringstream ss(input);
+    std::string token;
+    while (ss >> token) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
 
+
+// input: from position, tPosition
+// output: component ID
+// get the component ID at the from position
 std::string getComponentIDAtFrom(ChessPosition& from, tPosition & cTposition) {
     ChessPosition pos = tPosToChessPosition(cTposition.tPos);
     if (pos.x == from.x && pos.y == from.y) {

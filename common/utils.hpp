@@ -6,6 +6,12 @@
 #include "common/chessPosition.hpp"
 #include <glm/glm.hpp>
 #include "Lab3/chessCommon.h"
+#include <sstream>
+
+// input: string
+// output: vector of strings
+// split the string into tokens
+std::vector<std::string> splitString(const std::string& input);
 
 // input: UCI coordinate 
 // output: component ID

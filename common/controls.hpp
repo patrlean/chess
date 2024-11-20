@@ -23,8 +23,6 @@ using namespace glm;
 #include <sstream>
 #include <string>
 #include <vector>
-#include "controls.hpp"
-#include "Global.hpp"
 #include <thread>
 #include <mutex>
 #include <queue>
@@ -32,12 +30,11 @@ using namespace glm;
 #include <unordered_map>
 
 
-#include "common/utils.hpp"
-#include "common/chessPosition.hpp"
+#include "utils.hpp"
+#include "Global.hpp"
+#include "chessPosition.hpp"
 #include "Lab3/chessComponent.h"
-
-
-
+#include "ECE_ChessEngine.hpp"
 
 void computeMatricesFromInputs();
 glm::mat4 getViewMatrix();
@@ -62,6 +59,6 @@ void computeMatricesFromInputsLab3();
 void startInputThread();
 void cleanupInputThread();
 void moveChessPiece(const ChessPosition& from, const ChessPosition& to, std::string pieceID);
-void moveChessPieceThread(ChessPosition from, ChessPosition to, std::string pieceID);
+void moveChessPieceThread(ChessPosition from, ChessPosition to, std::string pieceID, bool isFirstMove);
 void moveKnightPiece(const ChessPosition& from, const ChessPosition& to, std::string pieceID);
 #endif

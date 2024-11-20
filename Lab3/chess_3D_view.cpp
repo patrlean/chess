@@ -168,6 +168,15 @@ int main( void )
     // Start input thread
     startInputThread();
 
+    // Start engine
+    if (!engine.InitializeEngine("../Lab3/dragon-64bit.exe")) {
+        return -1;
+    }
+    engine.SendMove("uci");
+    std::cout << "Engine Response: " << engine.ReadFromEngine() << std::endl;
+    engine.SendMove("isready");
+    std::cout << "Engine Response: " << engine.ReadFromEngine() << std::endl;
+
     do{
         processCommand(cTModelMap, gchessComponents);
 

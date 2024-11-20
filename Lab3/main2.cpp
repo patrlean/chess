@@ -1,6 +1,21 @@
 #include <iostream>
 #include <string>
 #include <windows.h>
+#include <sstream>
+#include <vector>
+
+// input: string
+// output: vector of strings
+// split the string into tokens
+std::vector<std::string> splitString(const std::string& input) {
+    std::vector<std::string> tokens;
+    std::stringstream ss(input);
+    std::string token;
+    while (ss >> token) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
 
 HANDLE hInputWrite, hInputRead;
 HANDLE hOutputWrite, hOutputRead;
@@ -50,11 +65,11 @@ std::string ReadFromEngine() {
 int main() {
     StartEngine();
 
-    SendToEngine("uci");
-    std::cout << "Engine Response: " << ReadFromEngine() << std::endl;
+    // SendToEngine("uci");
+    // std::cout << "Engine Response: " << ReadFromEngine() << std::endl;
 
-    SendToEngine("isready");
-    std::cout << "Engine Response: " << ReadFromEngine() << std::endl;
+    // SendToEngine("isready");
+    // std::cout << "Engine Response: " << ReadFromEngine() << std::endl;
 
     // std::cout << "sending move to engine" << std::endl;
     // // Example: position, followed by best move
@@ -68,13 +83,20 @@ int main() {
 
     std::cout << "Engine best move: " << response << std::endl;
     // Example: position, followed by best move
-    SendToEngine("position startpos moves b1c3");
+    SendToEngine("position startpos moves d2d4");
     SendToEngine("go depth 5");
 
     while ((response = ReadFromEngine()).find("bestmove") == std::string::npos) {
-        std::cout << "Engine Response: " << response << std::endl;
+        std::cout << "Engine Response: no bestmove" << std::endl;
     }
 
     std::cout << "Engine best move: " << response << std::endl;
+    std::cout << "best move is above " << std::endl;
+    std::vector<std::string> tokens = splitString(response);
+    for (const auto& token : tokens) {
+        std::cout << "tokens: " << token << std::endl;
+    }    
+    
+    
     return 0;
 }

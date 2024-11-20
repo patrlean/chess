@@ -70,6 +70,8 @@ add_executable(Lab3
 	common/chessPosition.hpp
 	common/utils.hpp
 	common/utils.cpp
+	common/ECE_ChessEngine.hpp
+	common/ECE_ChessEngine.cpp
 	
 	Lab3/chessComponent.cpp
 	Lab3/chessComponent.h
