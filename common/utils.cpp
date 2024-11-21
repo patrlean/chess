@@ -17,10 +17,18 @@ std::vector<std::string> splitString(const std::string& input) {
 // input: from position, tPosition
 // output: component ID
 // get the component ID at the from position
-std::string getComponentIDAtFrom(ChessPosition& from, tPosition & cTposition) {
-    ChessPosition pos = tPosToChessPosition(cTposition.tPos);
-    if (pos.x == from.x && pos.y == from.y) {
-        return cTposition.nameIdentifier;
+std::string getComponentIDAtFrom(const ChessPosition& from) {
+    for (auto& pieces : cTModelMap) {
+        std::vector<tPosition> cTPositions = pieces.second;
+        for (auto& cTPosition : cTPositions) {
+            ChessPosition pos = tPosToChessPosition(cTPosition.tPos);
+            if (pos.x == from.x && pos.y == from.y) {
+                if (cTPosition.nameIdentifier == "chessBoard") {
+                    continue;
+                }
+                return cTPosition.nameIdentifier;
+            }
+        }
     }
     return "nan";
 }
@@ -44,7 +52,7 @@ ChessPosition uciToPosition(const std::string& uciPos) {
 // 将tPos转换为ChessPosition
 ChessPosition tPosToChessPosition(glm::vec3 tPos) {
     ChessPosition pos;
-    pos.x = (tPos.x - (-3.5f * CHESS_BOX_SIZE))/ CHESS_BOX_SIZE;
+    pos.x = (tPos.x - (-3.5f * CHESS_BOX_SIZE)) / CHESS_BOX_SIZE;
     pos.y = (tPos.y - (-3.5f * CHESS_BOX_SIZE)) / CHESS_BOX_SIZE;
     return pos;
 }

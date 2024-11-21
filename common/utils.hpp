@@ -7,7 +7,7 @@
 #include <glm/glm.hpp>
 #include "Lab3/chessCommon.h"
 #include <sstream>
-
+#include "Global.hpp"
 // input: string
 // output: vector of strings
 // split the string into tokens
@@ -15,7 +15,7 @@ std::vector<std::string> splitString(const std::string& input);
 
 // input: UCI coordinate 
 // output: component ID
-std::string getComponentIDAtFrom(ChessPosition& from, tPosition & cTposition);
+std::string getComponentIDAtFrom(const ChessPosition& from);
 
 // input: UCI coordinate 
 // output: chess position in integer

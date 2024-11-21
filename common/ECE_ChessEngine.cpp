@@ -51,6 +51,9 @@ std::string ECE_ChessEngine::ReadFromEngine() {
         buffer[read] = '\0';
         output = buffer;
     }
+    
+    Sleep(20); 
+    
     return output;
 }
 

@@ -145,18 +145,6 @@ void computeMatricesFromInputs(){
 	lastTime = currentTime;
 }
 
-// A custom function for Lab3
-// Creates the view and Projection matrix based on following custom key definitions
-// keyboard inputs definitions
-//1)w key moves the camera radially closer to the origin.
-//2)s key moves the camera radially farther from the origin.
-//3)a key rotates the camera to the left maintaining the radial distance from the origin.
-//4)d key rotates to camera to the right maintaining the radial distance from the origin.
-//5) The up arrow key radially rotates the camera up.
-//6) The down arrow radially rotates the camera down.
-//7) TheL key toggles the specular and diffuse components of the light on and off but leaves the ambient component unchanged.
-//8) Pressing the escape key closes the window and exits the program
-
 // input thread function
 void inputThreadFunction() {
     while (isRunning) {
@@ -182,11 +170,16 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
         input = commandQueue.front();
         commandQueue.pop();
     }
+	
 
     std::vector<std::string> tokens = splitString(input);
     if (tokens.empty()) return;
 
     std::string command = tokens[0];
+	if (tokens.size() == 1) {
+		std::cout << "Invalid command or move!!" << std::endl;
+		return;
+	}
 	std::string move = tokens[1];
     if (command == "move") {
 		/*
@@ -216,7 +209,18 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
 		std::cout << "Sent move to engine: " << sendingFen << std::endl;
 		// get the best move from engine
 		std::string response;
-		while ((response = engine.ReadFromEngine()).find("bestmove") == std::string::npos) {std::cout << "Waiting for best move from engine..." << std::endl;}
+
+		while (true) {
+			response = engine.ReadFromEngine();
+			if (response.find("bestmove") != std::string::npos) {
+				break;
+			}else if (response.find("mate") != std::string::npos) {
+				std::cout << "Check Mate!!" << std::endl;
+				std::cout << response << std::endl;
+				checkmate = true;
+				return;
+			}
+		}
 		std::cout << "Received best move from engine: " << response << std::endl;
 		// split the response to get the best move
 		std::string bestMove;
@@ -226,11 +230,11 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
 			return;
 		}
 		// check move validation
-		if (bestMove == "0000") {
+		if (bestMove == "0000" || bestMove == "nan") {
 			std::cout << "Invalid move!" << std::endl;
 			return;
 		}
-		// std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		
 		firstMoveComplete = false;
 
 		// 2nd: move white chess piece
@@ -240,33 +244,17 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
 		std::string pieceID;
 	
         // 查找from位置上面的棋子
-		for (auto& pieces : tModelMap) {
-			std::vector<tPosition> cTPositions = pieces.second;
-			for (auto& cTPosition : cTPositions) {
-				if (getComponentIDAtFrom(from, cTPosition) != "nan") {
-					pieceID = getComponentIDAtFrom(from, cTPosition);
-					break;
-				}
-			}
-		}
+		pieceID = getComponentIDAtFrom(from);
+		
 		std::thread moveThread(moveChessPieceThread, from, to, pieceID, true);
 		moveThread.detach();
 		
-
 		// 3rd: move black chess piece
 		ChessPosition from2 = uciToPosition(bestMove.substr(0, 2));
         ChessPosition to2 = uciToPosition(bestMove.substr(2, 2));
 		std::string pieceID2;
 		// 查找from位置上面的棋子
-		for (auto& pieces : tModelMap) {
-			std::vector<tPosition> cTPositions = pieces.second;
-			for (auto& cTPosition : cTPositions) {
-				if (getComponentIDAtFrom(from2, cTPosition) != "nan") {
-					pieceID2 = getComponentIDAtFrom(from2, cTPosition);
-					break;
-				}
-			}
-		}
+		pieceID2 = getComponentIDAtFrom(from2);
         
         std::thread bestMoveThread([from2, to2, pieceID2]() {
 			std::unique_lock<std::mutex> lock(moveMutex);
@@ -457,10 +445,33 @@ void cleanupInputThread() {
 }
 
 void moveChessPieceThread(ChessPosition from, ChessPosition to, std::string pieceID, bool isFirstMove) {
+	// check if the destination has a chess piece// check if the destination has a chess piece
+	std::string destinationPieceID = getComponentIDAtFrom(to);
+	if (destinationPieceID != "nan") {
+		// move the destination piece out of the board
+		movePieceOutOfBoard(to, destinationPieceID);
+	}
+	// check if the piece is a knight
 	if (pieceID == "white_knight1" || pieceID == "white_knight2" || pieceID == "black_knight1" || pieceID == "black_knight2") {
 		moveKnightPiece(from, to, pieceID);
 	} else {
 		moveChessPiece(from, to, pieceID);
+	}
+	// check if it is a castling move
+	if ((pieceID == "white_king" || pieceID == "black_king") &&((from.x - to.x > 1)||(from.x - to.x < -1))) {
+		if (from.x - to.x > 0) {
+			// queen side castling
+			from.x = 0;
+			pieceID = getComponentIDAtFrom(from);
+			to.x = 3;
+			moveChessPiece(from, to, pieceID);
+		} else {
+			// king side castling
+			from.x = 7;
+			pieceID = getComponentIDAtFrom(from);
+			to.x = 5;
+			moveChessPiece(from, to, pieceID);
+		}
 	}
 
 	if (isFirstMove) {
@@ -544,7 +555,6 @@ void moveChessPiece(const ChessPosition& from, const ChessPosition& to, std::str
         
         // 添加锁保护
         {
-            
             for (auto& pieces : cTModelMap) {
                 std::vector<tPosition>& cTPositions = pieces.second;
                 for (auto& cTPosition : cTPositions) {
@@ -583,3 +593,41 @@ std::string getCurrentFen(const std::string& move) {
 	return fen;
 }
 
+void movePieceOutOfBoard(const ChessPosition& to, std::string pieceID) {
+	for (auto& pieces : cTModelMap) {
+		std::vector<tPosition>& cTPositions = pieces.second;
+		for (auto& cTPosition : cTPositions) {
+			if (cTPosition.nameIdentifier == pieceID) {
+				if (pieceID.find("white") != std::string::npos) {
+					// white piece
+					ChessPosition chessPos ;
+					chessPos = whiteCapturePos;
+					// check if the position is occupied
+					while (getComponentIDAtFrom(chessPos) != "nan") {
+						chessPos.y -= 1;
+						if (chessPos.y < 0) {
+							chessPos.y = 4;
+							chessPos.x -= 1;
+						}
+					}
+					cTPosition.tPos = chessPositionToTPos(chessPos);
+					whiteCapturePos = chessPos;
+				} else {
+					// black piece
+					ChessPosition chessPos ;
+					chessPos = blackCapturePos;
+					// check if the position is occupied
+					while (getComponentIDAtFrom(chessPos) != "nan") {
+						chessPos.y += 1;
+						if (chessPos.y > 8) {
+							chessPos.y = 4;
+							chessPos.x += 1;
+						}
+					}
+					cTPosition.tPos = chessPositionToTPos(chessPos);
+					blackCapturePos = chessPos;
+				}
+			}
+		}
+	}
+}
