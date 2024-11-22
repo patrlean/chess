@@ -29,4 +29,8 @@ ChessPosition tPosToChessPosition(glm::vec3 tPos);
 // output: tPos
 glm::vec3 chessPositionToTPos(ChessPosition chessPos);
 
+// input: two float numbers
+// output: true if they are the same
+bool isSamePosition(float a, float b, float epsilon = 0.1f);
+
 #endif // UTILS_HPP

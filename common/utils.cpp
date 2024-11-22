@@ -18,11 +18,14 @@ std::vector<std::string> splitString(const std::string& input) {
 // output: component ID
 // get the component ID at the from position
 std::string getComponentIDAtFrom(const ChessPosition& from) {
+    // std::cout << "Try to getComponentIDAtFrom Position: " << from.x << "," << from.y << std::endl;
     for (auto& pieces : cTModelMap) {
         std::vector<tPosition> cTPositions = pieces.second;
         for (auto& cTPosition : cTPositions) {
             ChessPosition pos = tPosToChessPosition(cTPosition.tPos);
-            if (pos.x == from.x && pos.y == from.y) {
+            
+            if (isSamePosition(pos.x, from.x) && isSamePosition(pos.y, from.y)) {
+                // std::cout << "cTPosition.nameIdentifier: " << cTPosition.nameIdentifier << "pos: " << pos.x << "," << pos.y << std::endl;
                 if (cTPosition.nameIdentifier == "chessBoard") {
                     continue;
                 }
@@ -61,4 +64,8 @@ ChessPosition tPosToChessPosition(glm::vec3 tPos) {
 // output: tPos
 glm::vec3 chessPositionToTPos(ChessPosition chessPos) {
     return glm::vec3((chessPos.x * CHESS_BOX_SIZE) + (-3.5f * CHESS_BOX_SIZE), (chessPos.y * CHESS_BOX_SIZE) + (-3.5f * CHESS_BOX_SIZE), PHEIGHT);
+}
+
+bool isSamePosition(float a, float b, float epsilon) {
+    return std::abs(a - b) < epsilon;
 }

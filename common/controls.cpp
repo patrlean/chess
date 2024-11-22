@@ -177,6 +177,10 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
 
     std::string command = tokens[0];
 	if (tokens.size() == 1) {
+		if (command == "quit") {
+			isRunning = false;
+			return;
+		}
 		std::cout << "Invalid command or move!!" << std::endl;
 		return;
 	}
@@ -202,11 +206,11 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
 			std::cout << "Failed to send move to engine!" << std::endl;
 			return;
 		}
-		if (!engine.SendMove("go depth 5")) {
+		if (!engine.SendMove("go depth 2")) {
 			std::cout << "Failed to send go depth 5 to engine!" << std::endl;
 			return;
 		}
-		std::cout << "Sent move to engine: " << sendingFen << std::endl;
+		// std::cout << "Sent move to engine: " << sendingFen << std::endl;
 		// get the best move from engine
 		std::string response;
 
@@ -215,13 +219,23 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
 			if (response.find("bestmove") != std::string::npos) {
 				break;
 			}else if (response.find("mate") != std::string::npos) {
-				std::cout << "Check Mate!!" << std::endl;
-				std::cout << response << std::endl;
-				checkmate = true;
-				return;
+				std::vector<std::string> tokens = splitString(response);
+				if (tokens.size() > 1) {
+					checkmate = true;
+					for (int idx = 0; idx < tokens.size(); idx++) {
+						if (tokens[idx] == "mate") {
+							if (tokens[idx + 1] == "1") {
+								std::cout << "Checkmate! You lose!!" << std::endl;
+							} else {
+								std::cout << "Checkmate! You win!!" << std::endl;
+							}
+						}
+					}
+				}
+				break;
 			}
 		}
-		std::cout << "Received best move from engine: " << response << std::endl;
+		// std::cout << "Received best move from engine: " << response << std::endl;
 		// split the response to get the best move
 		std::string bestMove;
 		std::vector<std::string> tokens = splitString(response);
@@ -305,9 +319,6 @@ void processCommand(tModelMap& tModelMap, std::vector<chessComponent>& chessComp
             std::cout << "Invalid command or move!!" << std::endl;
         }
     }
-	else if (command == "quit") {
-		isRunning = false;
-	}
     else {
         std::cout << "Invalid command or move!!" << std::endl;
     }
@@ -482,8 +493,8 @@ void moveChessPieceThread(ChessPosition from, ChessPosition to, std::string piec
 }
 
 void moveKnightPiece(const ChessPosition& from, const ChessPosition& to, std::string pieceID) {
-	std::cout << "Moving piece from " << from.x << "," << from.y << " to " << to.x << "," << to.y << std::endl;
-    std::cout << "pieceID: " << pieceID << std::endl;
+	// std::cout << "Moving piece from " << from.x << "," << from.y << " to " << to.x << "," << to.y << std::endl;
+    // std::cout << "pieceID: " << pieceID << std::endl;
 
     // 获取起点和终点的3D坐标
     glm::vec3 startPos = chessPositionToTPos(from);
@@ -533,8 +544,8 @@ void moveKnightPiece(const ChessPosition& from, const ChessPosition& to, std::st
 }
 
 void moveChessPiece(const ChessPosition& from, const ChessPosition& to, std::string pieceID) {
-    std::cout << "Moving piece from " << from.x << "," << from.y << " to " << to.x << "," << to.y << std::endl;
-    std::cout << "pieceID: " << pieceID << std::endl;
+    // std::cout << "Moving piece from " << from.x << "," << from.y << " to " << to.x << "," << to.y << std::endl;
+    // std::cout << "pieceID: " << pieceID << std::endl;
 
     // 获取起点和终点的3D坐标
     glm::vec3 startPos = chessPositionToTPos(from);
@@ -594,40 +605,46 @@ std::string getCurrentFen(const std::string& move) {
 }
 
 void movePieceOutOfBoard(const ChessPosition& to, std::string pieceID) {
-	for (auto& pieces : cTModelMap) {
-		std::vector<tPosition>& cTPositions = pieces.second;
-		for (auto& cTPosition : cTPositions) {
-			if (cTPosition.nameIdentifier == pieceID) {
-				if (pieceID.find("white") != std::string::npos) {
-					// white piece
-					ChessPosition chessPos ;
-					chessPos = whiteCapturePos;
-					// check if the position is occupied
-					while (getComponentIDAtFrom(chessPos) != "nan") {
-						chessPos.y -= 1;
-						if (chessPos.y < 0) {
-							chessPos.y = 4;
-							chessPos.x -= 1;
-						}
-					}
-					cTPosition.tPos = chessPositionToTPos(chessPos);
-					whiteCapturePos = chessPos;
-				} else {
-					// black piece
-					ChessPosition chessPos ;
-					chessPos = blackCapturePos;
-					// check if the position is occupied
-					while (getComponentIDAtFrom(chessPos) != "nan") {
-						chessPos.y += 1;
-						if (chessPos.y > 8) {
-							chessPos.y = 4;
-							chessPos.x += 1;
-						}
-					}
-					cTPosition.tPos = chessPositionToTPos(chessPos);
-					blackCapturePos = chessPos;
-				}
-			}
-		}
-	}
+    static int blackOffsetX = 0;  // 用于记录黑棋的横向偏移
+    static int blackOffsetY = 0;  // 用于记录黑棋的纵向偏移
+    
+    for (auto& pieces : cTModelMap) {
+        std::vector<tPosition>& cTPositions = pieces.second;
+        for (auto& cTPosition : cTPositions) {
+            if (cTPosition.nameIdentifier == pieceID) {
+                if (pieceID.find("white") != std::string::npos) {
+                    // 白棋逻辑保持不变
+                    ChessPosition chessPos = whiteCapturePos;
+                    while (getComponentIDAtFrom(chessPos) != "nan") {
+                        chessPos.y -= 1;
+                        if (chessPos.y < 0) {
+                            chessPos.y = 4;
+                            chessPos.x -= 1;
+                        }
+                    }
+                    cTPosition.tPos = chessPositionToTPos(chessPos);
+                    whiteCapturePos = chessPos;
+                } else {
+                    // 黑棋新逻辑
+                    ChessPosition chessPos;
+                    chessPos.x = 9 + blackOffsetX;  // 从基准位置9开始
+                    chessPos.y = 4 - blackOffsetY;  // 从基准位置4开始
+                    
+                    // 更新偏移量
+                    blackOffsetY++;
+                    if (blackOffsetY > 4) {  // 每列最多放5个棋子
+                        blackOffsetY = 0;
+                        blackOffsetX++;  // 移到下一列
+                    }
+                    
+                    // std::cout << "Moving black piece to position: " << chessPos.x << "," << chessPos.y << std::endl;
+                    
+                    // 设置新位置
+                    cTPosition.tPos = chessPositionToTPos(chessPos);
+                    blackCapturePos = chessPos;
+                }
+                break;
+            }
+        }
+    }
 }

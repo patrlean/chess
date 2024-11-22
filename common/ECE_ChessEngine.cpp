@@ -44,7 +44,7 @@ bool ECE_ChessEngine::SendMove(const std::string& command) {
 }
 
 std::string ECE_ChessEngine::ReadFromEngine() {
-    char buffer[4096];
+    char buffer[8192];
     DWORD read;
     std::string output;
     if (ReadFile(hOutputRead, buffer, sizeof(buffer) - 1, &read, NULL) && read > 0) {
